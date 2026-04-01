@@ -35,11 +35,21 @@ body {
   background:
     linear-gradient(180deg, #040705 0%, #0a120e 22%, #101c15 48%, #1a2c23 74%, var(--fade) 100%);
   overflow-x: hidden;
+  cursor: auto;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
+}
+
+button,
+[role="button"],
+input,
+textarea,
+select {
+  cursor: pointer;
 }
 
 .site-header {
@@ -101,7 +111,7 @@ a {
   min-height: calc(100vh - var(--header-height));
   display: grid;
   place-items: center;
-  padding: 2rem 1rem 4rem;
+  padding: 2rem 1rem;
   overflow: clip;
 }
 
@@ -152,14 +162,34 @@ a {
   position: relative;
   z-index: 3;
   width: min(840px, 100%);
+  min-height: calc(100vh - var(--header-height) - 6rem);
   margin: 0 auto;
+  transition: opacity 120ms linear;
+}
+
+.hero-title-wrap {
+  position: absolute;
+  top: calc(50% + (var(--hero-content-shift) * 0.45));
+  left: 50%;
+  width: min(920px, calc(100% - 2rem));
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.hero-meta {
+  position: absolute;
+  top: calc(50% + clamp(5.25rem, 10vw, 7.5rem) + var(--hero-content-shift));
+  left: 50%;
+  width: min(640px, calc(100% - 2rem));
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 1.25rem;
-  transform: translateY(var(--hero-content-shift));
-  transition: transform 120ms linear, opacity 120ms linear;
 }
 
 .eyebrow,
@@ -173,7 +203,6 @@ a {
 
 .hero h1 {
   margin: 0;
-  max-width: 12ch;
   font-family: "Phonk", Impact, Haettenschweiler, "Arial Black", sans-serif;
   font-size: clamp(3.4rem, 8vw, 6.8rem);
   line-height: 0.92;
@@ -343,7 +372,21 @@ a {
   }
 
   .hero-stage {
-    padding: 1.5rem 1rem 3rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .hero-content {
+    min-height: calc(100vh - var(--header-height) - 4.5rem);
+  }
+
+  .hero-title-wrap {
+    width: calc(100% - 1rem);
+  }
+
+  .hero-meta {
+    top: calc(50% + 4.8rem + var(--hero-content-shift));
+    width: calc(100% - 1rem);
+    gap: 1rem;
   }
 
   .hero h1 {
@@ -362,4 +405,5 @@ a {
   .ghost-button {
     width: 100%;
   }
+
 }
