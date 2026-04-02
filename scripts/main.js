@@ -1,7 +1,10 @@
 const root = document.documentElement;
 const hero = document.querySelector(".hero");
 const header = document.querySelector(".site-header");
-const cursorTargets = document.querySelectorAll("body, a, button, [role='button'], input, textarea, select");
+const testimonials = document.querySelector(".testimonials");
+const cursor = document.querySelector(".cursor");
+const interactiveTargets = document.querySelectorAll("a, button, .button, .ghost-button, [role='button'], input, textarea, select");
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -27,52 +30,42 @@ function updateHeaderHeight() {
   root.style.setProperty("--header-height", `${header.offsetHeight}px`);
 }
 
-function applyNativeCursor(cursorValue, pointerValue) {
-  cursorTargets.forEach((element) => {
-    if (element.matches("a, button, [role='button'], input, textarea, select")) {
-      element.style.cursor = pointerValue;
-      return;
-    }
+function updateTestimonialsProgress() {
+  if (!testimonials) {
+    return;
+  }
 
-    element.style.cursor = cursorValue;
-  });
+  const rect = testimonials.getBoundingClientRect();
+  const revealStart = window.innerHeight * 0.92;
+  const revealDistance = Math.max(window.innerHeight * 0.8, 1);
+  const progress = clamp((revealStart - rect.top) / revealDistance, 0, 1);
+
+  root.style.setProperty("--testimonial-progress", progress.toFixed(4));
 }
 
 function setupCursor() {
-  const image = new Image();
+  if (!cursor || prefersReducedMotion || !window.matchMedia("(pointer: fine)").matches) {
+    return;
+  }
 
-  image.addEventListener("load", () => {
-    const canvas = document.createElement("canvas");
-    const width = 36;
-    const height = 40;
-    const drawWidth = 28;
-    const drawHeight = 32;
-    const offsetX = 2;
-    const offsetY = 2;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext("2d");
-    if (!context) {
-      return;
-    }
-
-    context.clearRect(0, 0, width, height);
-    context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    const cursorValue = `url("${dataUrl}") 4 4, auto`;
-    const pointerValue = `url("${dataUrl}") 4 4, pointer`;
-
-    applyNativeCursor(cursorValue, pointerValue);
+  window.addEventListener("pointermove", (event) => {
+    cursor.classList.add("is-active");
+    cursor.style.transform = `translate(${event.clientX}px, ${event.clientY}px) translate(-50%, -50%)`;
   });
 
-  image.addEventListener("error", () => {
-    applyNativeCursor("auto", "pointer");
+  window.addEventListener("pointerleave", () => {
+    cursor.classList.remove("is-active");
   });
 
-  image.src = "./assets/SVG/cursor-white.svg";
+  interactiveTargets.forEach((element) => {
+    element.addEventListener("pointerenter", () => {
+      cursor.classList.add("is-hovering");
+    });
+
+    element.addEventListener("pointerleave", () => {
+      cursor.classList.remove("is-hovering");
+    });
+  });
 }
 
 let ticking = false;
@@ -86,6 +79,7 @@ function requestTick() {
   window.requestAnimationFrame(() => {
     updateHeaderHeight();
     updateHeroFade();
+    updateTestimonialsProgress();
     ticking = false;
   });
 }
@@ -95,8 +89,10 @@ window.addEventListener("resize", requestTick);
 window.addEventListener("load", () => {
   updateHeaderHeight();
   updateHeroFade();
+  updateTestimonialsProgress();
   setupCursor();
 });
 
 updateHeaderHeight();
 updateHeroFade();
+updateTestimonialsProgress();

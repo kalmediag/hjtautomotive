@@ -7,18 +7,19 @@
   <link rel="stylesheet" href="./styles/main.css">
 </head>
 <body>
+  <div class="cursor" aria-hidden="true"></div>
   <header class="site-header">
     <nav class="nav" aria-label="Primary navigation">
-      <a class="brand" href="#top">HJTAUTOMOTIVE</a>
+      <a class="brand" href="./index.html#home">HJTAUTOMOTIVE</a>
       <div class="menu">
-        <a href="#top">Home</a>
-        <a href="#info">More Info</a>
-        <a href="#about">Description</a>
+        <a href="./index.html#home">Home</a>
+        <a href="./work.html">Work</a>
+        <a href="./index.html#contact">Contact</a>
       </div>
     </nav>
   </header>
 
-  <main id="top">
+  <main id="home">
     <section class="hero" aria-label="HJTAUTOMOTIVE landing section">
       <div class="hero-stage">
         <div class="hero-media" aria-hidden="true">
@@ -36,8 +37,8 @@
               incididunt ut labore et dolore magna aliqua.
             </p>
             <div class="hero-actions">
-              <a class="button" href="#info">More Info</a>
-              <a class="ghost-button" href="#about">Description</a>
+              <a class="button" href="#testimonials">Testimonials</a>
+              <a class="ghost-button" href="./work.html">Work</a>
             </div>
           </div>
         </div>
@@ -46,47 +47,62 @@
       </div>
     </section>
 
-    <section class="info" id="info" aria-label="More information">
-      <div class="section-heading">
-        <p class="section-label">Lorem ipsum</p>
-        <h2>More Info</h2>
+    <section class="testimonials" id="testimonials" aria-label="Client testimonials">
+      <div class="section-heading section-heading-left">
+        <p class="section-label">Testimonials</p>
+        <h2>Rolling Feedback</h2>
+        <p class="section-intro">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
+        </p>
       </div>
 
-      <div class="info-grid">
-        <article class="info-card">
-          <h3>Lorem Ipsum</h3>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-            incididunt ut labore et dolore magna aliqua.
-          </p>
-        </article>
-        <article class="info-card">
-          <h3>Dolor Sit</h3>
-          <p>
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            ex ea commodo consequat.
-          </p>
-        </article>
-        <article class="info-card">
-          <h3>Amet Consectetur</h3>
-          <p>
-            Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-            fugiat nulla pariatur.
-          </p>
-        </article>
+      <div class="marquee-row marquee-row-single">
+        <div class="marquee-track">
+          <article class="testimonial-pill">
+            <span>“Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.”</span>
+            <strong>Client One</strong>
+          </article>
+          <article class="testimonial-pill">
+            <span>“Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.”</span>
+            <strong>Client Two</strong>
+          </article>
+          <article class="testimonial-pill">
+            <span>“Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.”</span>
+            <strong>Client Three</strong>
+          </article>
+          <article class="testimonial-pill">
+            <span>“Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.”</span>
+            <strong>Client One</strong>
+          </article>
+          <article class="testimonial-pill">
+            <span>“Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.”</span>
+            <strong>Client Two</strong>
+          </article>
+          <article class="testimonial-pill">
+            <span>“Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.”</span>
+            <strong>Client Three</strong>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="about" id="about" aria-label="Description">
-      <div class="section-heading">
-        <p class="section-label">Lorem ipsum</p>
-        <h2>Description</h2>
+    <section class="contact" id="contact" aria-label="Contact">
+      <div class="section-heading section-heading-left">
+        <p class="section-label">Contact</p>
+        <h2>Get In Touch</h2>
       </div>
-      <p>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
-        ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-        ullamco laboris nisi ut aliquip ex ea commodo consequat.
-      </p>
+
+      <div class="contact-panel">
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
+          ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+        </p>
+        <div class="contact-actions">
+          <a class="ghost-button" href="./work.html">View Work</a>
+          <a class="button" href="mailto:hello@hjtautomotive.com">Email</a>
+          <a class="ghost-button" href="tel:+440000000000">Call</a>
+        </div>
+      </div>
     </section>
   </main>
 
