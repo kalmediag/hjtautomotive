@@ -13,6 +13,371 @@ const menuToggle = document.querySelector(".menu-toggle");
 const menu = document.querySelector(".menu");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const desktopInteractionMedia = window.matchMedia("(min-width: 761px) and (hover: hover) and (pointer: fine)");
+const mobileBrandMedia = window.matchMedia("(max-width: 760px)");
+const siteContent = window.HJTAUT_DATA?.getSiteContent ? window.HJTAUT_DATA.getSiteContent() : null;
+const DEFAULT_GALLERY_ORDER_OVERRIDES = {
+  automotive: [
+    "./assets/optimized/Automotive/328%20Ferrari%20Sunset.jpg",
+    "./assets/optimized/Automotive/Porsche%20997.jpg",
+    "./assets/optimized/Automotive/Porsche%20964%2002%2014-10-24.jpg",
+    "./assets/optimized/Automotive/Porsche%20964%2007%2014-10-24.jpg",
+    "./assets/optimized/Automotive/Porsche%20964%2009%2014-10-24.jpg",
+    "./assets/optimized/Automotive/Porsche%20964%2017%2014-10-24.jpg",
+    "./assets/optimized/Automotive/Porsche%20964%20KS25-01%2021_06_25.jpg",
+    "./assets/optimized/Automotive/Posche%20964%2038%2014-10-24.jpg",
+    "./assets/optimized/Automotive/Dream%20Shot%20E30%20&%20964.jpg",
+    "./assets/optimized/Automotive/DSC08637.jpg",
+    "./assets/optimized/Automotive/P8271246.jpg",
+    "./assets/optimized/Automotive/P8271962.jpg",
+    "./assets/optimized/Automotive/P8272114.jpg",
+    "./assets/optimized/Automotive/P8272120.jpg",
+    "./assets/optimized/Automotive/P8272194.jpg",
+    "./assets/optimized/Automotive/P8302297.jpg",
+    "./assets/optimized/Automotive/P8302319.jpg",
+    "./assets/optimized/Automotive/P9203226.jpg",
+    "./assets/optimized/Automotive/P9203332.jpg",
+    "./assets/optimized/Automotive/P9203339.jpg",
+    "./assets/optimized/Automotive/P7226892.jpg",
+    "./assets/optimized/Automotive/P7226899.jpg",
+    "./assets/optimized/Automotive/P7277199.jpg",
+    "./assets/optimized/Automotive/P7277244.jpg",
+    "./assets/optimized/Automotive/S2000%2005%2023-10-24.jpg",
+    "./assets/optimized/Automotive/S2000%2009%2023-10-24.jpg",
+    "./assets/optimized/Automotive/S2000%2010%2023-10-24.jpg",
+    "./assets/optimized/Automotive/Honda%20S2000%2001%2030-10-24.jpg",
+    "./assets/optimized/Automotive/Honda%20S2000%2002%2019-10-24.jpg",
+    "./assets/optimized/Automotive/Honda%20S2000%2003%2021-10-24.jpg",
+    "./assets/optimized/Automotive/Honda%20S2000%2007%2030-10-24.jpg",
+    "./assets/optimized/Automotive/Dam_s%20S2000%2019-10-24%2002.jpg",
+    "./assets/optimized/Automotive/Dan%20S2000%2017%2021_04_25.jpg",
+    "./assets/optimized/Automotive/Dan%20S2000%2018%2021_04_25.jpg",
+    "./assets/optimized/Automotive/Dans%20Honda%20Sage%2003.jpg",
+    "./assets/optimized/Automotive/180SX%20KS25-20%2021_06_25.jpg",
+    "./assets/optimized/Automotive/180SX%20KS25-22%2021_06_25.jpg",
+    "./assets/optimized/Automotive/Nissan%2002%2024-08-24.jpg",
+    "./assets/optimized/Automotive/Nissan%2004%2024-08-24.jpg",
+    "./assets/optimized/Automotive/Jaguar%2005.jpg",
+    "./assets/optimized/Automotive/Jaguar%2006.jpg",
+    "./assets/optimized/Automotive/DSC00770.jpg",
+    "./assets/optimized/Automotive/DSC00899.jpg",
+    "./assets/optimized/Automotive/DSC01182.jpg",
+    "./assets/optimized/Automotive/DSC02358.jpg",
+    "./assets/optimized/Automotive/DSC02389.jpg",
+    "./assets/optimized/Automotive/DSC02521.jpg",
+    "./assets/optimized/Automotive/DSC02908.jpg",
+    "./assets/optimized/Automotive/DSC03013.jpg",
+    "./assets/optimized/Automotive/DSC03165.jpg",
+    "./assets/optimized/Automotive/DSC04300.jpg",
+    "./assets/optimized/Automotive/DSC06349.jpg",
+    "./assets/optimized/Automotive/DSC06362.jpg",
+    "./assets/optimized/Automotive/DSC06566.jpg",
+    "./assets/optimized/Automotive/DSC06648.jpg",
+    "./assets/optimized/Automotive/DSC06676.jpg",
+    "./assets/optimized/Automotive/DSC08360.jpg",
+    "./assets/optimized/Automotive/DSC08578.jpg",
+    "./assets/optimized/Automotive/P6211521.jpg",
+    "./assets/optimized/Automotive/P7226584.jpg",
+  ],
+};
+let galleryLayoutFrame = 0;
+let galleryResizeObserver = null;
+
+function getGalleryStorageKey(grid) {
+  const key = grid.dataset.galleryKey || window.location.pathname.split("/").pop() || "gallery";
+  return `hjtaut-gallery-order-${key}`;
+}
+
+function getCardSource(card) {
+  return card.querySelector("img")?.getAttribute("src") || "";
+}
+
+function applyGalleryOrder(grid, orderedSources) {
+  if (!Array.isArray(orderedSources) || !orderedSources.length) {
+    return false;
+  }
+
+  const cards = Array.from(grid.querySelectorAll(".gallery-card"));
+  const cardMap = new Map(cards.map((card) => [getCardSource(card), card]));
+  const reordered = [];
+
+  orderedSources.forEach((src) => {
+    const card = cardMap.get(src);
+
+    if (card) {
+      reordered.push(card);
+      cardMap.delete(src);
+    }
+  });
+
+  if (!reordered.length) {
+    return false;
+  }
+
+  [...reordered, ...cardMap.values()].forEach((card) => grid.appendChild(card));
+  grid.dataset.customOrdered = "true";
+  grid.dataset.layoutReady = "false";
+  return true;
+}
+
+function applySavedOrDefaultGalleryOrders() {
+  galleryGrids.forEach((grid) => {
+    const stored = window.localStorage.getItem(getGalleryStorageKey(grid));
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+
+        if (applyGalleryOrder(grid, parsed)) {
+          return;
+        }
+      } catch (error) {
+      }
+    }
+
+    const key = grid.dataset.galleryKey;
+    const defaultOrder = key ? DEFAULT_GALLERY_ORDER_OVERRIDES[key] : null;
+
+    if (defaultOrder) {
+      applyGalleryOrder(grid, defaultOrder);
+    }
+  });
+}
+
+function scheduleGalleryLayout() {
+  if (galleryLayoutFrame) {
+    return;
+  }
+
+  galleryLayoutFrame = window.requestAnimationFrame(() => {
+    galleryLayoutFrame = 0;
+    layoutGalleryGrid();
+  });
+}
+
+function setupGalleryLayoutObservers() {
+  if (!galleryGrids.length || !("ResizeObserver" in window)) {
+    return;
+  }
+
+  if (galleryResizeObserver) {
+    galleryResizeObserver.disconnect();
+  }
+
+  galleryResizeObserver = new ResizeObserver(() => {
+    scheduleGalleryLayout();
+  });
+
+  galleryGrids.forEach((grid) => {
+    galleryResizeObserver.observe(grid);
+  });
+}
+
+function setupGallerySwitcher() {
+  const switchers = document.querySelectorAll("[data-gallery-switcher]");
+
+  switchers.forEach((switcher) => {
+    const buttons = Array.from(switcher.querySelectorAll("[data-gallery-button]"));
+    const panels = Array.from(switcher.querySelectorAll("[data-gallery-panel]"));
+
+    if (!buttons.length || !panels.length) {
+      return;
+    }
+
+    const setActivePanel = (key) => {
+      buttons.forEach((button) => {
+        const isActive = button.dataset.galleryButton === key;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
+      });
+
+      panels.forEach((panel) => {
+        const isActive = panel.dataset.galleryPanel === key;
+        panel.classList.toggle("is-active", isActive);
+        panel.hidden = !isActive;
+      });
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setActivePanel(button.dataset.galleryButton || "");
+      });
+    });
+  });
+}
+
+function setText(selector, value) {
+  const element = document.querySelector(selector);
+
+  if (element && typeof value === "string") {
+    element.textContent = value;
+  }
+}
+
+function setInputLink(selector, type, value) {
+  const element = document.querySelector(selector);
+
+  if (!element || typeof value !== "string" || !value) {
+    return;
+  }
+
+  if (type === "email") {
+    element.setAttribute("href", `mailto:${value}`);
+  }
+
+  if (type === "phone") {
+    element.setAttribute("href", `tel:${value}`);
+  }
+}
+
+function updateResponsiveBrandText() {
+  document.querySelectorAll(".brand, .hero h1").forEach((element) => {
+    const fullBrandText = element.dataset.fullBrandText || element.textContent || "HJTAUTOMOTIVE";
+    if (!element.dataset.fullBrandText) {
+      element.dataset.fullBrandText = fullBrandText;
+    }
+    element.textContent = mobileBrandMedia.matches ? "HJT" : fullBrandText;
+  });
+}
+
+function applyBrandingContent() {
+  if (!siteContent?.branding?.brandText) {
+    return;
+  }
+
+  document.querySelectorAll(".brand, .hero h1").forEach((element) => {
+    element.textContent = siteContent.branding.brandText;
+    element.dataset.fullBrandText = siteContent.branding.brandText;
+  });
+}
+
+function applyHomeContent() {
+  if (!siteContent?.home) {
+    return;
+  }
+
+  setText(".eyebrow", siteContent.home.eyebrow);
+  setText(".hero-description", siteContent.home.description);
+  setText(".testimonials .section-heading h2", siteContent.home.testimonialsHeading);
+  setText(".testimonials .section-intro", siteContent.home.testimonialsIntro);
+  setText(".contact .section-heading h2", siteContent.home.contactHeading);
+  setText(".contact-panel p", siteContent.home.contactCopy);
+  setInputLink('.contact-actions a[href^="mailto:"]', "email", siteContent.home.contactEmail);
+  setInputLink('.contact-actions a[href^="tel:"]', "phone", siteContent.home.contactPhone);
+
+  const track = document.querySelector(".marquee-track");
+
+  if (track && Array.isArray(siteContent.home.testimonials) && siteContent.home.testimonials.length) {
+    const items = [...siteContent.home.testimonials, ...siteContent.home.testimonials];
+    track.innerHTML = items.map((item) => `
+      <article class="testimonial-pill">
+        <span>"${item.quote}"</span>
+        <strong>${item.author}</strong>
+      </article>
+    `).join("");
+  }
+}
+
+function applyWorkContent() {
+  if (!siteContent?.work?.tiles?.length) {
+    return;
+  }
+
+  siteContent.work.tiles.forEach((tileContent) => {
+    const tile = document.querySelector(`.showcase-tile[data-tile-key="${tileContent.key}"]`);
+
+    if (!tile) {
+      return;
+    }
+
+    const label = tile.querySelector(".showcase-tile-label");
+    const image = tile.querySelector("img");
+
+    tile.dataset.title = tileContent.title || "";
+    tile.dataset.category = tileContent.category || "";
+    tile.dataset.note = tileContent.note || "";
+
+    if (tileContent.href) {
+      tile.dataset.href = tileContent.href;
+    }
+
+    if (label && tileContent.label) {
+      label.textContent = tileContent.label;
+    }
+
+    if (image && tileContent.image) {
+      image.src = tileContent.image;
+    }
+  });
+}
+
+function applyGalleryContent() {
+  if (!siteContent?.galleries) {
+    return;
+  }
+
+  galleryGrids.forEach((grid) => {
+    const key = grid.dataset.galleryKey;
+    const order = key ? siteContent.galleries[key] : null;
+
+    if (!key || !Array.isArray(order) || !order.length) {
+      return;
+    }
+
+    const cards = Array.from(grid.querySelectorAll(".gallery-card"));
+    const cardMap = new Map(cards.map((card) => {
+      const image = card.querySelector("img");
+      const src = image?.getAttribute("src");
+      return [src, card];
+    }));
+
+    const reordered = [];
+
+    order.forEach((src) => {
+      const card = cardMap.get(src);
+
+      if (card) {
+        reordered.push(card);
+        cardMap.delete(src);
+      }
+    });
+
+    [...reordered, ...cardMap.values()].forEach((card) => grid.appendChild(card));
+    grid.dataset.customOrdered = "true";
+  });
+
+  const projectCards = document.querySelectorAll(".project-card");
+
+  if (projectCards.length && Array.isArray(siteContent.galleries.othersProjects)) {
+    projectCards.forEach((card, index) => {
+      const content = siteContent.galleries.othersProjects[index];
+
+      if (!content) {
+        return;
+      }
+
+      const image = card.querySelector("img");
+      const kicker = card.querySelector(".project-card-kicker");
+      const title = card.querySelector(".project-card-title");
+      const note = card.querySelector(".project-card-note");
+
+      if (image && content.image) {
+        image.src = content.image;
+      }
+
+      if (kicker && content.kicker) {
+        kicker.textContent = content.kicker;
+      }
+
+      if (title && content.title) {
+        title.textContent = content.title;
+      }
+
+      if (note && content.note) {
+        note.textContent = content.note;
+      }
+    });
+  }
+}
 
 function setMenuOpen(isOpen) {
   if (!menuToggle || !menu) {
@@ -273,6 +638,10 @@ function sortGalleryCards() {
   }
 
   galleryGrids.forEach((grid) => {
+    if (grid.dataset.customOrdered === "true") {
+      return;
+    }
+
     const cards = Array.from(grid.querySelectorAll(".gallery-card"));
 
     cards
@@ -291,6 +660,8 @@ function sortGalleryCards() {
         return aName.localeCompare(bName);
       })
       .forEach((card) => grid.appendChild(card));
+
+    grid.dataset.layoutReady = "false";
   });
 }
 
@@ -300,6 +671,10 @@ function rebalanceGalleryVariety() {
   }
 
   galleryGrids.forEach((grid) => {
+    if (grid.dataset.customOrdered === "true") {
+      return;
+    }
+
     const cards = Array.from(grid.querySelectorAll(".gallery-card"));
 
     if (cards.length < 4) {
@@ -320,7 +695,7 @@ function rebalanceGalleryVariety() {
 
           if (remaining === 0) {
             rebalanceGalleryVariety();
-            layoutGalleryGrid();
+            scheduleGalleryLayout();
           }
         }, { once: true });
       });
@@ -363,6 +738,7 @@ function rebalanceGalleryVariety() {
     }
 
     reordered.forEach((card) => grid.appendChild(card));
+    grid.dataset.layoutReady = "false";
   });
 }
 
@@ -372,43 +748,87 @@ function layoutGalleryGrid() {
   }
 
   galleryGrids.forEach((grid) => {
+    const cards = Array.from(grid.querySelectorAll(".gallery-card"));
     const computed = window.getComputedStyle(grid);
-    const rowSize = parseFloat(computed.getPropertyValue("grid-auto-rows"));
     const rowGap = parseFloat(computed.getPropertyValue("gap"));
+    const columns = Math.max(1, parseInt(computed.getPropertyValue("--gallery-columns"), 10) || 1);
+    const gridWidth = grid.clientWidth;
 
-    if (!rowSize) {
+    if (!gridWidth) {
       return;
     }
 
-    grid.querySelectorAll(".gallery-card").forEach((card) => {
+    const roundedWidth = Math.round(gridWidth);
+    const cardCount = cards.length;
+    const lastWidth = Number(grid.dataset.layoutWidth || 0);
+    const lastCount = Number(grid.dataset.layoutCount || 0);
+
+    const pendingImages = cards
+      .map((card) => card.querySelector("img"))
+      .filter(Boolean)
+      .filter((image) => !image.complete || !image.naturalWidth);
+
+    if (pendingImages.length) {
+      let remaining = pendingImages.length;
+      const handleImageReady = () => {
+        remaining -= 1;
+
+        if (remaining === 0) {
+          scheduleGalleryLayout();
+        }
+      };
+
+      pendingImages.forEach((image) => {
+        image.addEventListener("load", handleImageReady, { once: true });
+        image.addEventListener("error", handleImageReady, { once: true });
+      });
+
+      return;
+    }
+
+    if (lastWidth === roundedWidth && lastCount === cardCount && grid.dataset.layoutReady === "true") {
+      return;
+    }
+
+    const columnWidth = (gridWidth - (rowGap * (columns - 1))) / columns;
+    const columnHeights = new Array(columns).fill(0);
+
+    grid.classList.add("is-masonry");
+    grid.style.setProperty("--gallery-item-width", `${columnWidth}px`);
+
+    cards.forEach((card, index) => {
       const image = card.querySelector("img");
 
       if (!image) {
         return;
       }
 
-      const applySpan = () => {
-        const height = card.getBoundingClientRect().height;
+      const cardStyles = window.getComputedStyle(card);
+      const borderTop = parseFloat(cardStyles.borderTopWidth) || 0;
+      const borderBottom = parseFloat(cardStyles.borderBottomWidth) || 0;
+      const renderedImageHeight = columnWidth * (image.naturalHeight / image.naturalWidth);
+      const cardHeight = renderedImageHeight + borderTop + borderBottom;
+      const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      const left = columnIndex * (columnWidth + rowGap);
+      const top = columnHeights[columnIndex];
 
-        if (!height) {
-          return;
-        }
-
-        const span = Math.ceil((height + rowGap) / (rowSize + rowGap));
-        card.style.setProperty("--gallery-span", `${span}`);
-      };
-
-      if (image.complete) {
-        applySpan();
-      } else {
-        image.addEventListener("load", applySpan, { once: true });
-      }
+      card.style.width = `${columnWidth}px`;
+      card.style.setProperty("--gallery-x", `${left}px`);
+      card.style.setProperty("--gallery-y", `${top}px`);
+      columnHeights[columnIndex] = top + cardHeight + rowGap;
     });
+
+    const maxHeight = Math.max(...columnHeights, 0);
+    grid.style.height = `${Math.max(0, maxHeight - rowGap)}px`;
+    grid.dataset.layoutWidth = String(roundedWidth);
+    grid.dataset.layoutCount = String(cardCount);
+    grid.dataset.layoutReady = "true";
   });
 }
 
 function setupGalleryLightbox() {
-  const galleryCards = Array.from(document.querySelectorAll(".gallery-card"));
+  const getGalleryCards = () => Array.from(document.querySelectorAll(".gallery-card"));
+  const galleryCards = getGalleryCards();
 
   if (!galleryCards.length) {
     return;
@@ -434,19 +854,65 @@ function setupGalleryLightbox() {
   const prevButton = lightbox.querySelector(".lightbox-prev");
   const nextButton = lightbox.querySelector(".lightbox-next");
   let activeIndex = 0;
+  let requestToken = 0;
+
+  function getLightboxSourceCandidates(targetImage) {
+    const currentSource = targetImage.currentSrc || targetImage.src || "";
+    const explicitFull = targetImage.dataset.fullsrc;
+    const fullCandidate = currentSource.includes("/assets/optimized/")
+      ? currentSource.replace("/assets/optimized/", "/assets/full/")
+      : "";
+
+    return [explicitFull, fullCandidate, currentSource].filter((value, index, array) => (
+      Boolean(value) && array.indexOf(value) === index
+    ));
+  }
+
+  function loadBestLightboxSource(targetImage) {
+    const candidates = getLightboxSourceCandidates(targetImage);
+
+    if (!candidates.length) {
+      return Promise.resolve(targetImage.currentSrc || targetImage.src || "");
+    }
+
+    return new Promise((resolve) => {
+      const tryCandidate = (index) => {
+        if (index >= candidates.length) {
+          resolve(targetImage.currentSrc || targetImage.src || "");
+          return;
+        }
+
+        const probe = new Image();
+        probe.onload = () => resolve(candidates[index]);
+        probe.onerror = () => tryCandidate(index + 1);
+        probe.src = candidates[index];
+      };
+
+      tryCandidate(0);
+    });
+  }
 
   function updateLightbox(index) {
-    const targetCard = galleryCards[index];
+    const currentCards = getGalleryCards();
+    const targetCard = currentCards[index];
     const targetImage = targetCard?.querySelector("img");
 
     if (!targetImage || !lightboxImage || !lightboxCounter) {
       return;
     }
 
-    activeIndex = (index + galleryCards.length) % galleryCards.length;
-    lightboxImage.src = targetImage.currentSrc || targetImage.src;
+    activeIndex = (index + currentCards.length) % currentCards.length;
     lightboxImage.alt = targetImage.alt || "";
-    lightboxCounter.textContent = `${activeIndex + 1} / ${galleryCards.length}`;
+    lightboxCounter.textContent = `${activeIndex + 1} / ${currentCards.length}`;
+    const currentRequest = ++requestToken;
+
+    loadBestLightboxSource(targetImage).then((resolvedSource) => {
+      if (currentRequest !== requestToken) {
+        return;
+      }
+
+      lightboxImage.src = resolvedSource;
+    });
   }
 
   function openLightbox(index) {
@@ -472,13 +938,22 @@ function setupGalleryLightbox() {
     card.setAttribute("aria-label", `Open image ${index + 1}`);
 
     card.addEventListener("click", () => {
-      openLightbox(index);
+      if (card.closest(".gallery-grid")?.classList.contains("is-editing")) {
+        return;
+      }
+
+      openLightbox(getGalleryCards().indexOf(card));
     });
 
     card.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        openLightbox(index);
+
+        if (card.closest(".gallery-grid")?.classList.contains("is-editing")) {
+          return;
+        }
+
+        openLightbox(getGalleryCards().indexOf(card));
       }
     });
   });
@@ -567,7 +1042,7 @@ function setupShowcase() {
 
   window.addEventListener("resize", () => {
     syncInteractionMode();
-    layoutGalleryGrid();
+    scheduleGalleryLayout();
 
     if (!hasDesktopInteractions()) {
       hidePopup();
@@ -587,6 +1062,7 @@ function setupShowcase() {
 }
 
 let ticking = false;
+const needsScrollTick = Boolean(hero || testimonials || header);
 
 function requestTick() {
   if (ticking) {
@@ -602,10 +1078,18 @@ function requestTick() {
   });
 }
 
-window.addEventListener("scroll", requestTick, { passive: true });
+if (needsScrollTick) {
+  window.addEventListener("scroll", requestTick, { passive: true });
+}
+
 window.addEventListener("resize", () => {
-  requestTick();
+  if (needsScrollTick) {
+    requestTick();
+  }
+
   syncInteractionMode();
+  updateResponsiveBrandText();
+  scheduleGalleryLayout();
 
   if (window.innerWidth > 760) {
     setMenuOpen(false);
@@ -613,13 +1097,23 @@ window.addEventListener("resize", () => {
 });
 
 function initializeApp() {
+  applyBrandingContent();
+  applyHomeContent();
+  applyWorkContent();
+  applyGalleryContent();
+  applySavedOrDefaultGalleryOrders();
+  updateResponsiveBrandText();
   syncInteractionMode();
-  updateHeaderHeight();
-  updateHeroFade();
-  updateTestimonialsProgress();
+  if (needsScrollTick) {
+    updateHeaderHeight();
+    updateHeroFade();
+    updateTestimonialsProgress();
+  }
   sortGalleryCards();
   rebalanceGalleryVariety();
-  layoutGalleryGrid();
+  setupGalleryLayoutObservers();
+  scheduleGalleryLayout();
+  setupGallerySwitcher();
   setupMobileMenu();
   setupShowcase();
   setupGalleryLightbox();
@@ -631,4 +1125,6 @@ if (document.readyState === "loading") {
   initializeApp();
 }
 
-window.addEventListener("load", requestTick, { once: true });
+if (needsScrollTick) {
+  window.addEventListener("load", requestTick, { once: true });
+}
