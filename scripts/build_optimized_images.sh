@@ -37,4 +37,20 @@ find "${SOURCE_DIR}" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.p
   mv "${tmp_file}" "${target_file}"
 done
 
+# Mirror videos into optimized assets without re-encoding.
+# This keeps project video paths stable and avoids expensive transcodes in this script.
+find "${SOURCE_DIR}" -type f \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mov' \) | while IFS= read -r source_file; do
+  relative_path="${source_file#${SOURCE_DIR}/}"
+  target_file="${OUTPUT_DIR}/${relative_path}"
+  target_dir="$(dirname "${target_file}")"
+
+  mkdir -p "${target_dir}"
+
+  if [[ -f "${target_file}" && "${target_file}" -nt "${source_file}" ]]; then
+    continue
+  fi
+
+  cp -f "${source_file}" "${target_file}"
+done
+
 echo "Optimized images written to ${OUTPUT_DIR}"

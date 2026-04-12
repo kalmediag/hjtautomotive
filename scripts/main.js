@@ -82,6 +82,40 @@ const DEFAULT_GALLERY_ORDER_OVERRIDES = {
 let galleryLayoutFrame = 0;
 let galleryResizeObserver = null;
 
+function getCardMedia(card) {
+  return card.querySelector("img, video");
+}
+
+function getMediaDimensions(media, card) {
+  if (!media) {
+    return null;
+  }
+
+  if (media.tagName === "VIDEO") {
+    if (media.videoWidth && media.videoHeight) {
+      return { width: media.videoWidth, height: media.videoHeight };
+    }
+
+    const ratio = card?.dataset?.aspectRatio;
+
+    if (ratio && ratio.includes("/")) {
+      const [w, h] = ratio.split("/").map((value) => Number(value.trim()));
+
+      if (w > 0 && h > 0) {
+        return { width: w, height: h };
+      }
+    }
+
+    return null;
+  }
+
+  if (media.naturalWidth && media.naturalHeight) {
+    return { width: media.naturalWidth, height: media.naturalHeight };
+  }
+
+  return null;
+}
+
 function getGalleryStorageKey(grid) {
   const key = grid.dataset.galleryKey || window.location.pathname.split("/").pop() || "gallery";
   return `hjtaut-gallery-order-${key}`;
@@ -763,14 +797,20 @@ function layoutGalleryGrid() {
     const lastWidth = Number(grid.dataset.layoutWidth || 0);
     const lastCount = Number(grid.dataset.layoutCount || 0);
 
-    const pendingImages = cards
-      .map((card) => card.querySelector("img"))
+    const pendingMedia = cards
+      .map((card) => getCardMedia(card))
       .filter(Boolean)
-      .filter((image) => !image.complete || !image.naturalWidth);
+      .filter((media) => {
+        if (media.tagName === "VIDEO") {
+          return !media.videoWidth || !media.videoHeight;
+        }
 
-    if (pendingImages.length) {
-      let remaining = pendingImages.length;
-      const handleImageReady = () => {
+        return !media.complete || !media.naturalWidth;
+      });
+
+    if (pendingMedia.length) {
+      let remaining = pendingMedia.length;
+      const handleMediaReady = () => {
         remaining -= 1;
 
         if (remaining === 0) {
@@ -778,9 +818,14 @@ function layoutGalleryGrid() {
         }
       };
 
-      pendingImages.forEach((image) => {
-        image.addEventListener("load", handleImageReady, { once: true });
-        image.addEventListener("error", handleImageReady, { once: true });
+      pendingMedia.forEach((media) => {
+        if (media.tagName === "VIDEO") {
+          media.addEventListener("loadedmetadata", handleMediaReady, { once: true });
+          media.addEventListener("error", handleMediaReady, { once: true });
+        } else {
+          media.addEventListener("load", handleMediaReady, { once: true });
+          media.addEventListener("error", handleMediaReady, { once: true });
+        }
       });
 
       return;
@@ -796,17 +841,18 @@ function layoutGalleryGrid() {
     grid.classList.add("is-masonry");
     grid.style.setProperty("--gallery-item-width", `${columnWidth}px`);
 
-    cards.forEach((card, index) => {
-      const image = card.querySelector("img");
+    cards.forEach((card) => {
+      const media = getCardMedia(card);
+      const dimensions = getMediaDimensions(media, card);
 
-      if (!image) {
+      if (!dimensions || !dimensions.width || !dimensions.height) {
         return;
       }
 
       const cardStyles = window.getComputedStyle(card);
       const borderTop = parseFloat(cardStyles.borderTopWidth) || 0;
       const borderBottom = parseFloat(cardStyles.borderBottomWidth) || 0;
-      const renderedImageHeight = columnWidth * (image.naturalHeight / image.naturalWidth);
+      const renderedImageHeight = columnWidth * (dimensions.height / dimensions.width);
       const cardHeight = renderedImageHeight + borderTop + borderBottom;
       const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       const left = columnIndex * (columnWidth + rowGap);
@@ -827,7 +873,10 @@ function layoutGalleryGrid() {
 }
 
 function setupGalleryLightbox() {
-  const getGalleryCards = () => Array.from(document.querySelectorAll(".gallery-card"));
+  const getGalleryCards = () => (
+    Array.from(document.querySelectorAll(".gallery-card"))
+      .filter((card) => Boolean(card.querySelector("img")))
+  );
   const galleryCards = getGalleryCards();
 
   if (!galleryCards.length) {

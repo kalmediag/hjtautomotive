@@ -908,7 +908,9 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
   background:
     linear-gradient(180deg, rgba(6, 9, 8, 0.04), rgba(6, 9, 8, 0.3)),
     linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%);
+  opacity: 0.85;
   pointer-events: none;
+  transition: opacity 220ms ease;
 }
 
 .category-hero-media img,
@@ -957,6 +959,9 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
   border-radius: 1.6rem;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transform: translateY(0);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
 .project-card-copy {
@@ -997,63 +1002,22 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
   line-height: 1.6;
 }
 
-.aston-martin-page {
-  --aston-shell-pad: clamp(0.5rem, 1.1vh, 0.9rem);
-  --aston-card-gap: clamp(0.6rem, 1vh, 1rem);
-  height: 100dvh;
-  overflow: hidden;
+body.is-desktop-interactive .project-card:hover,
+body.is-desktop-interactive .project-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
 }
 
-.aston-martin-page .page-main {
-  height: calc(100dvh - var(--header-height));
-  width: calc(100% - 1rem);
-  padding: var(--aston-shell-pad) 0 0;
-  display: flex;
+body.is-desktop-interactive .project-card:hover::after,
+body.is-desktop-interactive .project-card:focus-visible::after {
+  opacity: 0.62;
 }
 
-.aston-martin-page .category-shell {
-  flex: 1 1 auto;
-  height: 100%;
-  min-height: 0;
+body.is-desktop-interactive .project-card:hover img,
+body.is-desktop-interactive .project-card:focus-visible img {
+  transform: scale(1.02);
 }
-
-.aston-martin-showcase {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  height: 100%;
-  padding: var(--aston-shell-pad);
-}
-
-.aston-martin-showcase .project-grid {
-  flex: 1 1 auto;
-  height: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--aston-card-gap);
-  align-items: stretch;
-}
-
-.aston-martin-card {
-  min-height: 0;
-  height: 100%;
-}
-
-.aston-martin-card img {
-  height: 100%;
-  object-fit: cover;
-}
-
-.aston-martin-card .project-card-copy {
-  left: clamp(0.95rem, 1.5vw, 1.25rem);
-  right: clamp(0.95rem, 1.5vw, 1.25rem);
-  bottom: clamp(0.85rem, 1.5vh, 1.15rem);
-}
-
-.aston-martin-card .project-card-title {
-  font-size: clamp(1.35rem, 2.15vw, 2.3rem);
-  line-height: 0.96;
-}
-
 
 .client-showcase {
   min-height: calc(100svh - var(--header-height) - (var(--category-gutter) * 2));
@@ -1090,30 +1054,63 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
 }
 
 .aston-martin-page {
-  height: 100svh;
+  --aston-shell-pad: clamp(0.5rem, 1vw, 0.85rem);
+  --aston-card-gap: clamp(0.65rem, 1vw, 1rem);
+  height: 100dvh;
   overflow: hidden;
 }
 
 .aston-martin-page .page-main {
-  min-height: calc(100svh - var(--header-height));
-  padding: 0.75rem 0;
+  height: calc(100dvh - var(--header-height));
+  min-height: 0;
+  width: calc(100% - 1rem);
+  max-width: 1920px;
+  padding: var(--aston-shell-pad) 0;
+  display: flex;
 }
 
 .aston-martin-page .category-shell {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+.aston-martin-showcase {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: var(--aston-shell-pad);
+}
+
+.aston-martin-showcase .project-grid {
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--aston-card-gap);
+  align-items: stretch;
 }
 
-.aston-martin-page .client-showcase {
-  min-height: 100%;
+.aston-martin-card {
+  min-height: 0;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
-.aston-martin-page .project-showcase-title {
-  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+.aston-martin-card img {
+  height: 100%;
+  object-fit: cover;
 }
 
-.aston-martin-page .category-kicker {
-  font-size: 0.68rem;
-  letter-spacing: 0.18em;
+.aston-martin-card .project-card-copy {
+  left: clamp(0.95rem, 1.5vw, 1.25rem);
+  right: clamp(0.95rem, 1.5vw, 1.25rem);
+  bottom: clamp(0.85rem, 1.5vh, 1.15rem);
+}
+
+.aston-martin-card .project-card-title {
+  font-size: clamp(1.35rem, 2.15vw, 2.2rem);
+  line-height: 0.96;
 }
 
 .category-gallery {
@@ -1145,6 +1142,25 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 0 0.2rem;
+}
+
+.project-video {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 26rem);
+  margin-bottom: 1rem;
+  border-radius: 1.35rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.project-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
 }
 
 .gallery-grid {
@@ -1181,6 +1197,13 @@ body.is-desktop-interactive .showcase-tile.is-active-tile img {
   display: block;
   object-fit: contain;
   transition: transform 260ms ease;
+}
+
+.gallery-card video {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .gallery-grid.is-masonry .gallery-card {
@@ -1456,7 +1479,12 @@ body.is-desktop-interactive .gallery-card:focus-visible img {
     overflow: auto;
   }
 
-  .aston-martin-page .page-main,
+  .aston-martin-page .page-main {
+    height: auto;
+    min-height: calc(100svh - var(--header-height));
+    display: block;
+  }
+
   .aston-martin-page .category-shell,
   .aston-martin-showcase,
   .aston-martin-showcase .project-grid {
@@ -1469,28 +1497,8 @@ body.is-desktop-interactive .gallery-card:focus-visible img {
   }
 
   .aston-martin-card {
+    height: auto;
     min-height: 20rem;
-  }
-
-  .aston-martin-page {
-    height: auto;
-    overflow: auto;
-  }
-
-  .aston-martin-page .page-main,
-  .aston-martin-page .category-shell,
-  .aston-martin-page .project-showcase,
-  .aston-martin-page .project-grid {
-    height: auto;
-    min-height: auto;
-  }
-
-  .aston-martin-page .project-grid {
-    grid-template-rows: none;
-  }
-
-  .aston-martin-page .project-card {
-    min-height: 18rem;
   }
 
   .client-showcase {
@@ -1504,18 +1512,6 @@ body.is-desktop-interactive .gallery-card:focus-visible img {
 
   .client-project-card {
     min-height: 18rem;
-  }
-
-  .aston-martin-page {
-    height: auto;
-    overflow: auto;
-  }
-
-  .aston-martin-page .page-main,
-  .aston-martin-page .category-shell,
-  .aston-martin-page .client-showcase {
-    min-height: auto;
-    height: auto;
   }
 
   .gallery-grid {
