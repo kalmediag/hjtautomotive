@@ -86,9 +86,27 @@ function getCardMedia(card) {
   return card.querySelector("img, video");
 }
 
+function getCardAspectRatio(card) {
+  const ratioFromData = card?.dataset?.aspectRatio;
+  const ratioFromStyle = card ? window.getComputedStyle(card).aspectRatio : "";
+  const ratio = ratioFromData || ratioFromStyle;
+
+  if (!ratio || !ratio.includes("/")) {
+    return null;
+  }
+
+  const [width, height] = ratio.split("/").map((value) => Number(value.trim()));
+
+  if (!width || !height) {
+    return null;
+  }
+
+  return { width, height };
+}
+
 function getMediaDimensions(media, card) {
   if (!media) {
-    return null;
+    return getCardAspectRatio(card);
   }
 
   if (media.tagName === "VIDEO") {
@@ -96,17 +114,7 @@ function getMediaDimensions(media, card) {
       return { width: media.videoWidth, height: media.videoHeight };
     }
 
-    const ratio = card?.dataset?.aspectRatio;
-
-    if (ratio && ratio.includes("/")) {
-      const [w, h] = ratio.split("/").map((value) => Number(value.trim()));
-
-      if (w > 0 && h > 0) {
-        return { width: w, height: h };
-      }
-    }
-
-    return null;
+    return getCardAspectRatio(card);
   }
 
   if (media.naturalWidth && media.naturalHeight) {
@@ -206,6 +214,42 @@ function setupGalleryLayoutObservers() {
   });
 }
 
+function setupGalleryVideoCards() {
+  const videoCards = Array.from(document.querySelectorAll(".gallery-card-video"));
+
+  if (!videoCards.length) {
+    return;
+  }
+
+  videoCards.forEach((card) => {
+    const video = card.querySelector("video");
+    const fallbackRatio = card.dataset.aspectRatio || "4/5";
+    card.style.setProperty("--video-aspect", fallbackRatio.replace("/", " / "));
+
+    if (!video) {
+      return;
+    }
+
+    const applyActualRatio = () => {
+      if (!video.videoWidth || !video.videoHeight) {
+        return;
+      }
+
+      const actualRatio = `${video.videoWidth}/${video.videoHeight}`;
+      card.dataset.aspectRatio = actualRatio;
+      card.style.setProperty("--video-aspect", `${video.videoWidth} / ${video.videoHeight}`);
+      scheduleGalleryLayout();
+    };
+
+    if (video.readyState >= 1) {
+      applyActualRatio();
+      return;
+    }
+
+    video.addEventListener("loadedmetadata", applyActualRatio, { once: true });
+  });
+}
+
 function setupGallerySwitcher() {
   const switchers = document.querySelectorAll("[data-gallery-switcher]");
 
@@ -236,6 +280,198 @@ function setupGallerySwitcher() {
         setActivePanel(button.dataset.galleryButton || "");
       });
     });
+  });
+}
+
+function setupTestimonialsScroller() {
+  const scroller = document.querySelector("[data-testimonial-scroller]");
+  const track = scroller?.querySelector(".marquee-track");
+
+  if (!scroller || !track) {
+    return;
+  }
+
+  if (!track.dataset.loopReady) {
+    const originals = Array.from(track.querySelectorAll(".testimonial-pill:not([data-clone='true'])"));
+
+    if (!originals.length) {
+      return;
+    }
+
+    // Prepend one clone-set and append one clone-set for seamless left/right looping.
+    const prependFragment = document.createDocumentFragment();
+    const appendFragment = document.createDocumentFragment();
+
+    originals.forEach((pill) => {
+      const leftClone = pill.cloneNode(true);
+      leftClone.dataset.clone = "true";
+      leftClone.setAttribute("aria-hidden", "true");
+      prependFragment.appendChild(leftClone);
+    });
+
+    originals.forEach((pill) => {
+      const rightClone = pill.cloneNode(true);
+      rightClone.dataset.clone = "true";
+      rightClone.setAttribute("aria-hidden", "true");
+      appendFragment.appendChild(rightClone);
+    });
+
+    track.prepend(prependFragment);
+    track.append(appendFragment);
+
+    track.dataset.originalCount = String(originals.length);
+    track.dataset.loopReady = "true";
+  }
+
+  let loopSpan = 0;
+  let rafId = 0;
+  let lastFrameTime = 0;
+  let resumeTimer = 0;
+  let paused = false;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartScroll = 0;
+  let scrollCarry = 0;
+  const autoSpeedPxPerSecond = 72;
+
+  const measureLoopSpan = () => {
+    const originalCount = Number(track.dataset.originalCount || 0);
+    const firstOriginalIndex = originalCount;
+    const firstOriginal = track.children[firstOriginalIndex];
+    const firstCloneAfterOriginals = track.children[firstOriginalIndex + originalCount];
+
+    if (firstOriginal && firstCloneAfterOriginals) {
+      loopSpan = firstCloneAfterOriginals.offsetLeft - firstOriginal.offsetLeft;
+    } else {
+      loopSpan = track.scrollWidth / 3;
+    }
+
+    if (!Number.isFinite(loopSpan) || loopSpan <= 0) {
+      loopSpan = 0;
+    }
+
+    if (loopSpan > 0 && scroller.scrollLeft === 0) {
+      // Start on the middle/original set so dragging left and right works immediately.
+      scroller.scrollLeft = loopSpan;
+    }
+  };
+
+  const normalizeLoopPosition = () => {
+    if (!loopSpan) {
+      return;
+    }
+
+    while (scroller.scrollLeft >= loopSpan * 2) {
+      scroller.scrollLeft -= loopSpan;
+    }
+
+    while (scroller.scrollLeft < loopSpan) {
+      scroller.scrollLeft += loopSpan;
+    }
+  };
+
+  const pauseTemporarily = (ms = 450) => {
+    paused = true;
+    if (resumeTimer) {
+      window.clearTimeout(resumeTimer);
+    }
+
+    resumeTimer = window.setTimeout(() => {
+      paused = false;
+    }, ms);
+  };
+
+  const handleDragStart = (event) => {
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    isDragging = true;
+    paused = true;
+    dragStartX = event.clientX;
+    dragStartScroll = scroller.scrollLeft;
+    scroller.classList.add("is-dragging");
+    scroller.setPointerCapture?.(event.pointerId);
+  };
+
+  const handleDragMove = (event) => {
+    if (!isDragging) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragStartX;
+    scroller.scrollLeft = dragStartScroll - deltaX;
+    normalizeLoopPosition();
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) {
+      return;
+    }
+
+    isDragging = false;
+    scroller.classList.remove("is-dragging");
+    pauseTemporarily(350);
+  };
+
+  scroller.addEventListener("pointerdown", handleDragStart);
+  scroller.addEventListener("pointermove", handleDragMove);
+  scroller.addEventListener("pointerup", handleDragEnd);
+  scroller.addEventListener("pointercancel", handleDragEnd);
+  scroller.addEventListener("mouseleave", handleDragEnd);
+
+  const animate = (time) => {
+    if (!lastFrameTime) {
+      lastFrameTime = time;
+    }
+
+    const delta = (time - lastFrameTime) / 1000;
+    lastFrameTime = time;
+
+    if (!loopSpan) {
+      measureLoopSpan();
+    }
+
+    if (!paused && !document.hidden && loopSpan > 0) {
+      scrollCarry += autoSpeedPxPerSecond * delta;
+      const step = Math.trunc(scrollCarry);
+
+      if (step !== 0) {
+        scroller.scrollLeft += step;
+        scrollCarry -= step;
+        normalizeLoopPosition();
+      }
+    }
+
+    rafId = window.requestAnimationFrame(animate);
+  };
+
+  measureLoopSpan();
+  rafId = window.requestAnimationFrame(animate);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      lastFrameTime = 0;
+      measureLoopSpan();
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    measureLoopSpan();
+  });
+
+  window.addEventListener("load", () => {
+    measureLoopSpan();
+  }, { once: true });
+
+  window.addEventListener("beforeunload", () => {
+    if (resumeTimer) {
+      window.clearTimeout(resumeTimer);
+    }
+
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+    }
   });
 }
 
@@ -797,19 +1033,16 @@ function layoutGalleryGrid() {
     const lastWidth = Number(grid.dataset.layoutWidth || 0);
     const lastCount = Number(grid.dataset.layoutCount || 0);
 
-    const pendingMedia = cards
-      .map((card) => getCardMedia(card))
-      .filter(Boolean)
-      .filter((media) => {
-        if (media.tagName === "VIDEO") {
-          return !media.videoWidth || !media.videoHeight;
-        }
+    const pendingCards = cards
+      .map((card) => ({
+        card,
+        media: getCardMedia(card),
+        dimensions: getMediaDimensions(getCardMedia(card), card),
+      }))
+      .filter((entry) => !entry.dimensions && entry.media);
 
-        return !media.complete || !media.naturalWidth;
-      });
-
-    if (pendingMedia.length) {
-      let remaining = pendingMedia.length;
+    if (pendingCards.length) {
+      let remaining = pendingCards.length;
       const handleMediaReady = () => {
         remaining -= 1;
 
@@ -818,7 +1051,7 @@ function layoutGalleryGrid() {
         }
       };
 
-      pendingMedia.forEach((media) => {
+      pendingCards.forEach(({ media }) => {
         if (media.tagName === "VIDEO") {
           media.addEventListener("loadedmetadata", handleMediaReady, { once: true });
           media.addEventListener("error", handleMediaReady, { once: true });
@@ -837,11 +1070,12 @@ function layoutGalleryGrid() {
 
     const columnWidth = (gridWidth - (rowGap * (columns - 1))) / columns;
     const columnHeights = new Array(columns).fill(0);
+    const lockOrder = grid.dataset.lockOrder === "true";
 
     grid.classList.add("is-masonry");
     grid.style.setProperty("--gallery-item-width", `${columnWidth}px`);
 
-    cards.forEach((card) => {
+    cards.forEach((card, index) => {
       const media = getCardMedia(card);
       const dimensions = getMediaDimensions(media, card);
 
@@ -854,7 +1088,9 @@ function layoutGalleryGrid() {
       const borderBottom = parseFloat(cardStyles.borderBottomWidth) || 0;
       const renderedImageHeight = columnWidth * (dimensions.height / dimensions.width);
       const cardHeight = renderedImageHeight + borderTop + borderBottom;
-      const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      const columnIndex = lockOrder
+        ? index % columns
+        : columnHeights.indexOf(Math.min(...columnHeights));
       const left = columnIndex * (columnWidth + rowGap);
       const top = columnHeights[columnIndex];
 
@@ -1160,9 +1396,11 @@ function initializeApp() {
   }
   sortGalleryCards();
   rebalanceGalleryVariety();
+  setupGalleryVideoCards();
   setupGalleryLayoutObservers();
   scheduleGalleryLayout();
   setupGallerySwitcher();
+  setupTestimonialsScroller();
   setupMobileMenu();
   setupShowcase();
   setupGalleryLightbox();

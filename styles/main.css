@@ -376,6 +376,7 @@ body.is-menu-open .menu-toggle span:last-child {
 
 .testimonials,
 .work,
+.memorial,
 .contact,
 .page-main {
   position: relative;
@@ -397,6 +398,47 @@ body.is-menu-open .menu-toggle span:last-child {
   opacity: calc(0.35 + (var(--testimonial-progress) * 0.65));
   transform: translateY(calc(36px - (var(--testimonial-progress) * 36px)));
   transition: opacity 180ms linear, transform 180ms linear;
+}
+
+.memorial {
+  padding: 1.25rem 0 2rem;
+}
+
+.memorial-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+}
+
+.memorial-panel {
+  border-radius: 1.6rem 0 0 1.6rem;
+  overflow: hidden;
+}
+
+.memorial-panel img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.memorial-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 2.25rem;
+  border-radius: 0 1.6rem 1.6rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.memorial-copy h2 {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 4.8rem);
+  line-height: 0.92;
+  font-weight: 800;
 }
 
 .contact {
@@ -456,9 +498,26 @@ body.is-menu-open .menu-toggle span:last-child {
 
 .marquee-row {
   position: relative;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
   margin-top: 2rem;
+  cursor: grab;
+  touch-action: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.marquee-row.is-dragging {
+  cursor: grabbing;
+}
+
+.marquee-row::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .marquee-track {
@@ -466,11 +525,11 @@ body.is-menu-open .menu-toggle span:last-child {
   align-items: center;
   gap: 1rem;
   width: max-content;
-  animation: testimonial-marquee 22s linear infinite;
-  animation-play-state: running;
+  animation: none;
 }
 
 .testimonial-pill {
+  flex: 0 0 auto;
   min-width: 30rem;
   max-width: 30rem;
   padding: 1.45rem 1.5rem;
@@ -478,6 +537,8 @@ body.is-menu-open .menu-toggle span:last-child {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.04));
   text-align: center;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .testimonial-pill span {
@@ -495,6 +556,7 @@ body.is-menu-open .menu-toggle span:last-child {
   text-transform: uppercase;
   color: rgba(244, 240, 232, 0.9);
 }
+
 
 .work-grid {
   display: grid;
@@ -1206,6 +1268,16 @@ body.is-desktop-interactive .project-card:focus-visible img {
   object-fit: contain;
 }
 
+.gallery-card-video {
+  aspect-ratio: var(--video-aspect, 4 / 5);
+}
+
+.gallery-card-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .gallery-grid.is-masonry .gallery-card {
   position: absolute;
   top: 0;
@@ -1737,10 +1809,38 @@ body.is-desktop-interactive .gallery-card:focus-visible img {
   }
 
   .testimonials,
+  .memorial,
   .contact,
   .page-main,
   .category-page .page-main {
     width: calc(100% - 1rem);
+  }
+
+  .memorial-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .memorial-panel {
+    border-radius: 1.4rem 1.4rem 0 0;
+  }
+
+  .memorial-panel img {
+    height: auto;
+  }
+
+  .memorial-copy {
+    text-align: left;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 1.1rem;
+    border-radius: 0 0 1.4rem 1.4rem;
+    border-top: 0;
+  }
+
+  .memorial-copy h2 {
+    font-size: clamp(2rem, 8vw, 3.2rem);
+    line-height: 0.95;
   }
 
   .section-heading,
@@ -1760,7 +1860,6 @@ body.is-desktop-interactive .gallery-card:focus-visible img {
 
   .marquee-track {
     gap: 0.75rem;
-    animation-duration: 28s;
   }
 
   .testimonial-pill {
